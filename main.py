@@ -1,44 +1,3 @@
-# ███─███─████─█──█─███─███
-# ─█───█──█──█─█─█──█────█
-# ─█───█──█────██───███──█
-# ─█───█──█──█─█─█──█────█
-# ─█──███─████─█──█─███──█
-#
-#
-# █──█─███─█───████─███─████
-# █──█─█───█───█──█─█───█──█
-# ████─███─█───████─███─████
-# █──█─█───█───█────█───█─█
-# █──█─███─███─█────███─█─█
-#
-#
-# ███─████─████
-# █───█──█─█──█
-# ███─█──█─████
-# █───█──█─█─█
-# █───████─█─█
-#
-#
-# ████─█───███─████─███
-# █──█─█────█──█──█─█
-# ████─█────█──█────███
-# █──█─█────█──█──█─█
-# █──█─███─███─████─███
-#
-#
-# ████──██─██
-# █──██──███
-# ████────█
-# █──██───█
-# ████────█
-# ────────█
-#
-# █──█─████─████──████─█──█
-# █──█─█──█─█──██─█──█─█──█
-# ████─████─████──█──█─████
-# █──█─█──█─█──██─█──█─█──█
-# █──█─█──█─████──████─█──█
-
 '''
 Данная программа позволяет делать следующие типы запросов:
 Самый дешевый билет от A до B на сегодня
@@ -111,7 +70,8 @@ class TicketsFinder:
         # Делаем аналогично, как с городами,
         # только без падежей
         airlines = requests.get(
-            'http://api.travelpayouts.com/data/ru/airlines.json')
+            'http://api.travelpayouts.com/data/ru/airlines.json'
+        )
 
         # Словарь с ключом - кодом авиакомпании
         # и значением ее названием
@@ -163,7 +123,12 @@ class TicketsFinder:
 
         # Делаем запрос к api
         response = requests.get(
-            'http://api.travelpayouts.com/v1/prices/calendar', params=params)
+            'http://api.travelpayouts.com/v1/prices/calendar',
+            params=params
+        )
+
+        logging.info('http://api.travelpayouts.com/v1/prices/calendar')
+        logging.info(params)
 
         # Если нам не ответили или ответ не успешен,
         # то ничего не возвращаем
@@ -173,6 +138,10 @@ class TicketsFinder:
         if response_json['success']:
             # Список дат в словаре, первая - самый дешевый билет
             dates = list(response_json['data'].keys())
+
+            # Если список пустой значит рейсов нет
+            if not dates:
+                return None
             return response_json['data'][dates[0]]
 
     # Метод позволяет искать среди токенов,
@@ -216,6 +185,9 @@ class TicketsFinder:
             params=params,
         )
 
+        logging.info('http://api.travelpayouts.com/v2/prices/month-matrix')
+        logging.info(params)
+
         # Если запрос не удачный, то завершаем метод
         if not response:
             return
@@ -251,6 +223,9 @@ class TicketsFinder:
             params=params
         )
 
+        logging.info('http://api.travelpayouts.com/v1/city-directions')
+        logging.info(params)
+
         # Проверяем запрос на успешность
         if not response:
             return
@@ -283,6 +258,9 @@ class TicketsFinder:
             params=params,
         )
 
+        logging.info('http://api.travelpayouts.com/v1/prices/cheap')
+        logging.info(params)
+
         # Если запрос не удачный, то завершаем метод
         if not response:
             return
@@ -293,6 +271,7 @@ class TicketsFinder:
             return response_json['data'][city_to]
 
 
+# То что будет нам все искать
 tickets_finder = TicketsFinder()
 
 
@@ -321,8 +300,7 @@ def handle_dialog(res, req):
     #  Если пользователь новый, то посылаем ему справку
     if req['session']['new'] or not req['request']['command']:
         res['response']['text'] \
-            = 'Привет, я могу помочь с подбором рейса.\n' + \
-              'Просто спросите меня откуда, куда и на какой день.'
+            = 'Привет, я могу помочь с подбором рейса.'
         return
 
     # Преобразуем токены к нижнему регистру
@@ -331,198 +309,206 @@ def handle_dialog(res, req):
     # Ищем среди токенов названия городов
     cities = tickets_finder.find_cities(tokens)
 
-    # Если количество городов 2, это значит,
-    # что пользователь хочет билет между двумя городами
-    if len(cities) == 2:
-        # Пункт отправления
-        origin = cities[0].capitalize()
-        # Пункт назначения
-        destination = cities[1].capitalize()
+    # На всякий случай непредвиденных обстоятельств
+    try:
+        # Если количество городов 2, это значит,
+        # что пользователь хочет билет между двумя городами
+        if len(cities) == 2:
+            # Пункт отправления
+            origin = cities[0].capitalize()
+            # Пункт назначения
+            destination = cities[1].capitalize()
 
-        # Ищем самый дешевый билет на следующий месяц
-        if ('дешевый' in tokens or 'дешевого' in tokens) and 'месяц' in tokens:
-            # Получаем список всех билетов на месяц
-            flights = tickets_finder.find_tickets_for_a_month(
-                origin,
-                destination,
-            )
-
-            # Если билетов нет, то ошибка
-            if not flights:
-                res['response']['text'] = 'Авиарейс не найден.'
-                return
-
-            # Берем первый как самый дешевый
-            price = flights[0]['value']
-            # И сравниваем со всеми остальные по стоимости
-            for flight in flights:
-                price = min(price, flight['value'])
-
-            # Формируем ответ
-            res['response']['text'] = \
-                'Самый дешевый билет от {} до {} на этот месяц:\n'.format(
-                    tickets_finder.get_ro(origin),
-                    tickets_finder.get_ro(destination)
+            # Ищем самый дешевый билет на следующий месяц
+            if ('дешевый' in tokens or 'дешевого' in tokens) and 'месяц' in tokens:
+                # Получаем список всех билетов на месяц
+                flights = tickets_finder.find_tickets_for_a_month(
+                    origin,
+                    destination,
                 )
-            res['response']['text'] += str(price) + ' рублей'
 
-        # Ищем самый дешевый
-        elif 'дешевый' in tokens \
-                and ('пересадок' in tokens or 'пересадки' in tokens
-                     or 'пересадками' in tokens or 'пересадкой'):
-            # Делаем запрос к api о самых дешевых с пересадками и
-            # без пересадок
-            flights = tickets_finder.find_best_ticket(origin, destination)
+                # Если билетов нет, то ошибка
+                if not flights:
+                    res['response']['text'] = 'Авиарейс не найден.'
+                    return
 
-            # Без пересадок
-            if 'без' in tokens:
-                changes = 0
-                flight = flights['0']
+                # Берем первый как самый дешевый
+                price = flights[0]['value']
+                # И сравниваем со всеми остальные по стоимости
+                for flight in flights:
+                    price = min(price, flight['value'])
 
-            # С одной пересаткой
-            elif 'одной' in tokens or '1' in tokens or 'одна' in tokens:
-                changes = 1
-                flight = flights['1']
-
-            # С двумя пересадками
-            else:
-                changes = 2
-                flight = flights['2']
-
-            # Готовим информация
-            flight_number = flight['airline'] + str(flight['flight_number'])
-            airline_name = tickets_finder.find_airline_name(flight['airline'])
-            flight_price = str(flight['price'])
-            departure_time = flight['departure_at'][11:-1]
-            departure_date = flight['departure_at'][:10]
-
-            # Формируем текст ответа
-            text = 'Билет от {} до {}:\n' + 'Номер - {}\n' \
-                   + 'Дата вылета - {}\n' + \
-                   'Время вылета - {}\n' + \
-                   'Авиакомпания - {}\n' + \
-                   'Цена - {} рублей\n' + \
-                   'Количество пересадок - {}'
-
-            text = text.format(
-                origin,
-                destination,
-                flight_number,
-                departure_date,
-                departure_time,
-                airline_name,
-                flight_price,
-                changes,
-            )
-
-            # Готовим ответ
-            res['response']['text'] = text
-            res['response']['buttons'] = [
-                {
-                    "title": flight_number,
-                    "payload": {},
-                    "url": "https://yandex.ru/search/?text={}".format(
-                        flight_number
-                    ),
-                    "hide": True,
-                }
-            ]
-
-        # Иначе думаем, что нам нужно самый дешевый билет на сегодня
-        else:
-            # Ищем лучший билет на сегодня
-            flight = tickets_finder.find_best_ticket_for_today(
-                origin,
-                destination,
-            )
-
-            # По умолчанию авиарейс не найден
-            text = 'Авиарейс не найден.'
-
-            if flight is not None:
                 # Формируем ответ
-                flight_name = flight['airline'] + str(flight['flight_number'])
+                res['response']['text'] = \
+                    'Самый дешевый билет от {} до {} на этот месяц:\n'.format(
+                        tickets_finder.get_ro(origin),
+                        tickets_finder.get_ro(destination)
+                    )
+                res['response']['text'] += str(price) + ' рублей'
+
+            # Ищем самый дешевый
+            elif 'дешевый' in tokens \
+                    and ('пересадок' in tokens or 'пересадки' in tokens
+                         or 'пересадками' in tokens or 'пересадкой' in tokens):
+                # Делаем запрос к api о самых дешевых с пересадками и
+                # без пересадок
+                flights = tickets_finder.find_best_ticket(origin, destination)
+                # Без пересадок
+                if 'без' in tokens:
+                    changes = 0
+                    flight = flights['0']
+
+                # С одной пересаткой
+                elif 'одной' in tokens or '1' in tokens or 'одна' in tokens:
+                    changes = 1
+                    flight = flights['1']
+
+                # С двумя пересадками
+                else:
+                    changes = 2
+                    flight = flights['2']
+
+                # Готовим информация
+                flight_number = flight['airline'] + str(flight['flight_number'])
+                airline_name = tickets_finder.find_airline_name(flight['airline'])
+                flight_price = str(flight['price'])
                 departure_time = flight['departure_at'][11:-1]
                 departure_date = flight['departure_at'][:10]
 
-                text = 'Билет от {} до {} на сегодня:\n' + 'Номер - {}\n' \
+                # Формируем текст ответа
+                text = 'Билет от {} до {}:\n' + 'Номер - {}\n' \
                        + 'Дата вылета - {}\n' + \
                        'Время вылета - {}\n' + \
                        'Авиакомпания - {}\n' + \
-                       'Цена - {} рублей'
+                       'Цена - {} рублей\n' + \
+                       'Количество пересадок - {}'
+
                 text = text.format(
-                    tickets_finder.get_ro(origin),
-                    tickets_finder.get_ro(destination),
-                    flight_name,
+                    origin,
+                    destination,
+                    flight_number,
                     departure_date,
                     departure_time,
-                    tickets_finder.find_airline_name(
-                        flight['airline']
-                    ),
-                    str(flight['price']),
+                    airline_name,
+                    flight_price,
+                    changes,
                 )
 
-                # Добавляем кнопку для поиска билета в яндексе
+                # Готовим ответ
+                res['response']['text'] = text
                 res['response']['buttons'] = [
                     {
-                        "title": flight_name,
+                        "title": flight_number,
                         "payload": {},
                         "url": "https://yandex.ru/search/?text={}".format(
-                            flight_name
+                            flight_number
                         ),
                         "hide": True,
                     }
                 ]
 
-            # Ответ - получившийся текст
-            res['response']['text'] = text
+            # Иначе думаем, что нам нужно самый дешевый билет на сегодня
+            else:
+                # Ищем лучший билет на сегодня
+                flight = tickets_finder.find_best_ticket_for_today(
+                    origin,
+                    destination,
+                )
 
-    # А если 1, то значит только из одного города
-    elif len(cities) == 1:
-        origin = cities[0].capitalize()
-        if 'популярные' in tokens or 'популярных' in tokens:
-            # Получаем список самых популярных
-            popular = tickets_finder.find_popular_tickets(origin)
+                # По умолчанию авиарейс не найден
+                text = 'Авиарейс не найден.'
+                if flight is not None:
+                    # Формируем ответ
+                    flight_name = flight['airline'] + str(flight['flight_number'])
+                    departure_time = flight['departure_at'][11:-1]
+                    departure_date = flight['departure_at'][:10]
 
-            # Формируем ответ
-            res['response']['text'] = \
-                'Самые популярные авиарейсы из ' + \
-                tickets_finder.get_ro(origin.lower()) + ':\n'
-            res['response']['buttons'] = []
+                    text = 'Билет от {} до {} на сегодня:\n' + 'Номер - {}\n' \
+                           + 'Дата вылета - {}\n' + \
+                           'Время вылета - {}\n' + \
+                           'Авиакомпания - {}\n' + \
+                           'Цена - {} рублей'
+                    text = text.format(
+                        tickets_finder.get_ro(origin),
+                        tickets_finder.get_ro(destination),
+                        flight_name,
+                        departure_date,
+                        departure_time,
+                        tickets_finder.find_airline_name(
+                            flight['airline']
+                        ),
+                        str(flight['price']),
+                    )
 
-            # Добавляем все доступные рейсы
-            for city, info in list(popular.items()):
-                # Номер рейса
-                flight_number = info['airline'] + str(info['flight_number'])
-                # Название авиакомпании
-                airline = tickets_finder.find_airline_name(info['airline'])
-
-                if flight_number is not None and airline is not None:
-                    # Добавляем текст с названием рейса и авиакомпании
-                    res['response']['text'] += \
-                        flight_number + ' - ' \
-                        + tickets_finder.get_city_by_code(
-                            city).capitalize() \
-                        + ' - ' + airline + '\n'
-
-                    # Добавляем кнопку с поиском рейса в яндексе
-                    res['response']['buttons'].append(
+                    # Добавляем кнопку для поиска билета в яндексе
+                    res['response']['buttons'] = [
                         {
-                            "title": flight_number,
+                            "title": flight_name,
                             "payload": {},
                             "url": "https://yandex.ru/search/?text={}".format(
-                                flight_number
+                                flight_name
                             ),
                             "hide": True,
                         }
-                    )
+                    ]
+
+                # Ответ - получившийся текст
+                res['response']['text'] = text
+
+        # А если 1, то значит только из одного города
+        elif len(cities) == 1:
+            origin = cities[0].capitalize()
+            if 'популярные' in tokens or 'популярных' in tokens:
+                # Получаем список самых популярных
+                popular = tickets_finder.find_popular_tickets(origin)
+
+                # Формируем ответ
+                res['response']['text'] = \
+                    'Самые популярные авиарейсы из ' + \
+                    tickets_finder.get_ro(origin.lower()) + ':\n'
+                res['response']['buttons'] = []
+
+                # Добавляем все доступные рейсы
+                for city, info in list(popular.items()):
+                    # Номер рейса
+                    flight_number = info['airline'] + str(info['flight_number'])
+                    # Название авиакомпании
+                    airline = tickets_finder.find_airline_name(info['airline'])
+
+                    if flight_number is not None and airline is not None:
+                        # Добавляем текст с названием рейса и авиакомпании
+                        res['response']['text'] += \
+                            flight_number + ' - ' \
+                            + tickets_finder.get_city_by_code(
+                                city).capitalize() \
+                            + ' - ' + airline + '\n'
+
+                        # Добавляем кнопку с поиском рейса в яндексе
+                        res['response']['buttons'].append(
+                            {
+                                "title": flight_number,
+                                "payload": {},
+                                "url": "https://yandex.ru/search/?text={}".format(
+                                    flight_number
+                                ),
+                                "hide": True,
+                            }
+                        )
+            # В противном случае команды ме не знаем
+            else:
+                res['response']['text'] = 'Я не знаю такой команды.'
+
         # В противном случае команды ме не знаем
         else:
             res['response']['text'] = 'Я не знаю такой команды.'
 
-    # В противном случае команды ме не знаем
-    else:
-        res['response']['text'] = 'Я не знаю такой команды.'
+    # Если вдруг что-то случилось не по плану,
+    # скорее всего рейсов просто не нашлось
+    except Exception as e:
+        res['response']['text'] = 'Я не знаю, что случилось. Возможно таких рейсов просто не существует.'
+
+        # Прологируем для анализа
+        logging.error(e)
 
 
 if __name__ == '__main__':
