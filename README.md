@@ -10,27 +10,27 @@
 Если в запросе указаны один или несколько номеров рейсов, то на них обязательно будет кнопка, со ссылкой на номер рейса в поисковике.
 
 ## Самый дешевый билет от A до B на сегодня
-![](https://i.ibb.co/SRKM9Vb/q-Ev68-P0-UAq-Q.jpg)
-![](https://i.ibb.co/tsSRMw8/L83-R0-IJMEOY.jpg)
+![](https://cdn1.savepice.ru/uploads/2019/4/26/283326687bf561f96ad31b0598c5a7e3-full.jpg)
+![](https://cdn1.savepice.ru/uploads/2019/4/26/fe04ace139886cf16ef414c188a8bc5d-full.jpg)
 
 Данный запрос вернет билет, если, конечно, он существует и кнопку-ссылку на номер рейса.
 
 ## Цена самого дешевого билета от A до B на этот месяц
-![](https://i.ibb.co/C6bW9Rv/4-QKKlu1r-Pp-E.jpg)
-![](https://i.ibb.co/ZBH4g7g/f4o-j-EERz-Kk.jpg)
+![](https://cdn1.savepice.ru/uploads/2019/4/26/170a16a1f335b742403ce75c515b2baa-full.jpg)
+![](https://cdn1.savepice.ru/uploads/2019/4/26/927fe9987ccf6e993bbdb23759fb5a9a-full.jpg)
 
 Данный запрос вернет цену самого дешевого билета. Данная функция нужна, для того, чтобы примерно представлять, какие деньги на поездку придется потратить.
 
 ## Дешевый билет без / с одной / с двумя пересадками от A до B
-![](https://i.ibb.co/J2m9ZJ4/a-gx-FMaid-Ag.jpg)
-![](https://i.ibb.co/2ZLqm7D/3-Mjs8x08c-o.jpg)
-![](https://i.ibb.co/VStHwJf/h-VWn-AEKW-k-A.jpg)
+![](https://cdn1.savepice.ru/uploads/2019/4/26/e6e78cf3cfd4092412068ba5b5fd5a6c-full.jpgt)
+![](https://cdn1.savepice.ru/uploads/2019/4/26/5180fd454b0fbc4c3fd2501948a0f7bd-full.jpg)
+![](https://cdn1.savepice.ru/uploads/2019/4/26/70dfabc7ebd4e37b8105a7c1fce77da2-full.jpg)
 
 Данный вид запросов вернет билет с тем количеством пересадок, которым вы ему укажите. Возвращает самый дешевый билет. Даты вылета могут быть на несколько месяцев вперед.
 
 ## Самые популярные рейсы из A
-![](https://i.ibb.co/ZxG1JxQ/f-CHIk-U4-DALA.jpg)
-![](https://i.ibb.co/VHdxvtg/M5-OMQ5-Mlp-M4.jpg)
-![](https://i.ibb.co/6t5mc2K/pb3p9vksn-FQ.jpg)
+![](https://cdn1.savepice.ru/uploads/2019/4/26/38d7e7d20163d1b1c5de25725141e796-full.jpg)
+![](https://cdn1.savepice.ru/uploads/2019/4/26/808ac93da5658a5943425dc69538f393-full.jpg)
+![](https://cdn1.savepice.ru/uploads/2019/4/26/8cefe5dcfbe07f69b1ea9cd1fc597eaa-full.jpg)
 
 Данный вид запросов возвращает список самых популярных рейсов с указанием их номера.
